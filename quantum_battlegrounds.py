@@ -1,21 +1,10 @@
-from os import abort
-from turtle import back
+from os import abort, stat
 import typing
 from qiskit import QuantumCircuit
 from qiskit.visualization import plot_histogram
 from qiskit.tools.monitor import job_monitor
 from azure.quantum.qiskit import AzureQuantumProvider
-from scipy.fft import set_backend
-
-
-# provider = AzureQuantumProvider (
-#     resource_id = "/subscriptions/b1d7f7f8-743f-458e-b3a0-3e09734d716d/resourceGroups/aq-hackathons/providers/Microsoft.Quantum/Workspaces/aq-hackathon-01",
-#     location = "eastus"
-# )
-# print([backend.name() for backend in provider.backends()])
-
-
-
+from numpy.random import choice
 
 
 # game logic
@@ -70,7 +59,7 @@ class Arena:
     round = 0
     lanes = 0
 
-    target_backend = 'ionq-simulator'
+    target_backend = 'ionq.simulator'
     provider = None
 
 
@@ -81,7 +70,7 @@ class Arena:
         self.players = [Player(i+1, starting_gates.copy()) for i in range(playercount)]
         self.pool = starting_pool
         self.lanes = lanes
-        if not backend==None:
+        if (not backend==None):
             self.set_backend(backend)
 
         self.provider = AzureQuantumProvider (
@@ -138,21 +127,42 @@ class Arena:
     """
     Battle phase
     """
+    @staticmethod
     def sum_score(bitstring):
         return sum([b=='1' for b in bitstring])
 
 
-    def battle(self, pid1, pid2):
+    def battle(self, pid1, pid2, shots=1):
         atob = self.players[pid1].circuit.combine(self.players[pid2].circuit)
         btoa = self.players[pid2].circuit.combine(self.players[pid1].circuit)
-        atob.measure(list(range(self.lanes)), list(range(self.lanes)))
-        btoa.measure(list(range(self.lanes)), list(range(self.lanes)))
-        
+        atob.measure(range(self.lanes), range(self.lanes))
+        btoa.measure(range(self.lanes), range(self.lanes))
+        print(f"Round between Player {pid1} and Player {pid2}")
+        print(atob)
+        print(btoa)
+
         simulator_backend = self.provider.get_backend(self.target_backend)
-        job1 = simulator_backend.run(atob, shots=1)
-        job2 = simulator_backend.run(btoa, shots=1)
+        job1 = simulator_backend.run(atob, shots=shots)
+        job2 = simulator_backend.run(btoa, shots=shots)
+        
+        result1 = job1.result().get_counts(atob)
+        result2 = job2.result().get_counts(btoa)
+        return result1, result2
 
 
+    def determine_winner(self, pid1, pid2):
+        r1, r2 = self.battle(pid1, pid2, shots=1)
+        print(r1, r2, list(r1.keys()))
+        return list(r1.keys())[0] + " | " + list(r2.keys())[0]
+        # s1 = self.sum_score(list(r1.keys())[0])
+        # s2 = self.sum_score(list(r2.keys())[0])
+        # if s1 > s2:
+        #     return pid1
+        # elif s2 > s1:
+        #     return pid2
+        # else:
+        #     return -1 
+        
 
 
     """
