@@ -286,7 +286,7 @@ class Arena:
         while self.players_remaining > 1:
             self.process_round()
         
-        print (f"\n!!! THE WINNER IS Player {self.players[0].id} !!!\N")
+        print (f"\n!!! THE WINNER IS Player {self.players[0].id} !!!\n")
         
 
 
