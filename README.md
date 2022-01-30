@@ -29,9 +29,7 @@ A circuit that’s designed to turn a 0 state into 1 will more likely turn the s
 In this Unity demo, we present the core quantum algorithm: Two players get involved in an interactive fight where the probabilistic distribution of their quantum circuit output determines the game result. In the game, each player will be able to select from the shop what they wish to buy and place them in order; then they battle, and the winner is revealed. Here are the chess pieces that we've designed:
 
 <img src="cardbook.png" alt="Card Book">
-From left to right: X gate, H gate, S gate, I gate and CNOT gate.
-
-
+From left to right: X gate, H gate, S gate, I gate and CNOT gate. You can find out about the inspiration behind the designs in our presentation, or simply in the game!
 # Future Vision
 
 In future versions, the game would be equipped with multi-player support, a health and damage system, a currency system, animations. In addition, the common pool of chess pieces will randomly assign pieces to each player's shop interface, and can be refresh through spending currency if you don't like the pieces presented. 
