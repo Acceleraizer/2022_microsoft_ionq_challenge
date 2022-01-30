@@ -38,13 +38,19 @@ def applyTQG(circuit, gatename, targets):
 def sum_score(bitstring):
         return sum([b=='1' for b in bitstring])
 
-def pick_from_probabilities(prob):
-    pass
+def pick_from_probabilities(probdict:dict):
+    val, prob = [], []
+    for k, v in probdict.items():
+        val.append(k)
+        prob.append(v)
 
+    print(val, prob)
+    return choice(val, p=prob)
 
 class Player:
     id = None
     minions = {}
+    health = 3
     circuit:QuantumCircuit = None
     last_circuit:QuantumCircuit = None
 
@@ -53,7 +59,7 @@ class Player:
         self.minions = gate_types.copy()
 
     def __str__(self):
-        return f"Player {self.id}, with minions {self.minions}"
+        return f"Player {self.id}, health = {self.health}, with minions {self.minions}"
 
 
 
@@ -146,23 +152,25 @@ class Arena:
         job1 = simulator_backend.run(atob, shots=shots)
         job2 = simulator_backend.run(btoa, shots=shots)
         
-        result1 = job1.result().get_counts(atob)
-        result2 = job2.result().get_counts(btoa)
-        return result1, result2
+        raw_result1 = job1.result()
+        raw_result2 = job2.result()
+        if self.target_backend == 'ionq.qpu':
+            return raw_result1.get_counts(atob), raw_result2.get_counts(btoa)
+        else:
+            # print(raw_result1)
+            # print(raw_result1.to_dict())
+            probdict1 = raw_result1.to_dict()['results'][0]['data']['probabilities']
+            probdict2 = raw_result2.to_dict()['results'][0]['data']['probabilities']
+            # print(probdict1)
+            return pick_from_probabilities(probdict1), pick_from_probabilities(probdict2)
 
 
-    def determine_winner(self, pid1, pid2):
+    def battle_resolve(self, pid1, pid2):
         r1, r2 = self.battle(pid1, pid2, shots=1)
-        print(r1, r2, list(r1.keys()))
-        return list(r1.keys())[0] + " | " + list(r2.keys())[0]
-        # s1 = self.sum_score(list(r1.keys())[0])
-        # s2 = self.sum_score(list(r2.keys())[0])
-        # if s1 > s2:
-        #     return pid1
-        # elif s2 > s1:
-        #     return pid2
-        # else:
-        #     return -1 
+        print(r1, r2)
+        s1 = sum_score(r1)
+        s2 = sum_score(r2)
+        return r1, r2, s1, s2
     
 
 
@@ -170,7 +178,6 @@ class Arena:
     """
     Printing functions
     """
-
     def pr_playerstate(self):
         print("\n".join([str(player) for player in self.players]))
 

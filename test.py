@@ -31,7 +31,8 @@ def main():
 
     # r1, r2 = arena.battle(0, 1)
     # print (r1, r2)
-    print(arena.determine_winner(0, 1))
+    r1, r2, s1, s2 = arena.battle_resolve(0, 1)
+    print(r1, r2, s1, s2)
 
 
 if __name__=='__main__':
