@@ -35,6 +35,12 @@ def applyTQG(circuit, gatename, targets):
         print("gate translation not implemented")
         return None
 
+def sum_score(bitstring):
+        return sum([b=='1' for b in bitstring])
+
+def pick_from_probabilities(prob):
+    pass
+
 
 class Player:
     id = None
@@ -127,11 +133,6 @@ class Arena:
     """
     Battle phase
     """
-    @staticmethod
-    def sum_score(bitstring):
-        return sum([b=='1' for b in bitstring])
-
-
     def battle(self, pid1, pid2, shots=1):
         atob = self.players[pid1].circuit.combine(self.players[pid2].circuit)
         btoa = self.players[pid2].circuit.combine(self.players[pid1].circuit)
@@ -162,7 +163,8 @@ class Arena:
         #     return pid2
         # else:
         #     return -1 
-        
+    
+
 
 
     """
