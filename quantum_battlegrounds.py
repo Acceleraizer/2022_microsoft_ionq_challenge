@@ -13,7 +13,7 @@ from numpy.random import choice
 # 2. build phase
 # 3. 
 
-SINGLE_QUBIT_GATES = ['I', 'X', 'Y', 'Z', 'H']
+SINGLE_QUBIT_GATES = ['I', 'X', 'Y', 'Z', 'H', 'S']
 TWO_QUBIT_GATES = ['CX']
 
 def applySQG(circuit, gatename, targets):
@@ -27,6 +27,8 @@ def applySQG(circuit, gatename, targets):
         circuit.h(targets[0])
     elif gatename == 'I':
         circuit.i(targets[0])
+    elif gatename == 'S':
+        circuit.s(targets[0])
     else:
         print("gate translation not implemented")
         return None
