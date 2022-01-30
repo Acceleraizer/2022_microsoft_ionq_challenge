@@ -18,13 +18,13 @@ Auto-Chess, one of the most popular game types on in the internet as of now, can
 
 In quantum auto-chess, quantum algorithms are employed for automated fights. During the "prepare phase", every player will be equipped with a quantum circuit of two qubits, and apply logic gates ("chess pieces") to the circuit. The end goal of the player is to flip their initial state from 0 to 1. In addition, certain combos of chess pieces grant extra special power that comes in the form of multi-qubit gates. For example, if a player have the HZH gate sequence on one qubit, the system immediately grants a X gate to him, becuase HZH = X.(this function will be available in a more advanced version)
 
-During "battle phase" ,your circuit is connected with your opponents, then measured. Unlike traditional auto-chess, the quantum auto-chess players face two fights every round. First, A player’s circuit output will become B player’s input. Then we measure B circuit’s outfits, and sum the total number of 1 digit that are measured. This is the AB fight. Then the BA fight happens. Whichever side that achieved more 1 digits wins the round and deals damage to the other player. 
+During "battle phase" ,your circuit is connected with your opponents (input to output), then measured. Unlike traditional auto-chess, the quantum auto-chess players face two fights every round. First, A player’s circuit output will become B player’s input. Then we measure B circuit’s outfits, and sum the total number of 1 digit that are measured. This is the AB fight. Then the BA fight happens. For each phase, the score of the starting player is determined by the sum of the digits in the measured state. For example, in the AB fight, if the measured state is 01, then player A gets 1 point. Whichever side achieves more 1 digits in the measurement outcome wins the round and deals damage to the other player. 
 
 <img src="battle_demo.png" alt="Two fights in one round">
 
 A circuit that’s designed to turn a 0 state into 1 will more likely turn the state 1 into 0. Hence, your opponent will block your circuit from flipping the initial state, but the complexity of quantum systems makes the actual result <b>way more <b> unpredictable. But that is the fun of quantum mechanics; you never know for certain!
 
-# Demo Version 
+# Demo Version (UnityEngine)
 
 In this Unity demo, we present the core quantum algorithm: Two players get involved in an interactive fight where the probabilistic distribution of their quantum circuit output determines the game result. In the game, each player will be able to select from the shop what they wish to buy and place them in order; then they battle, and the winner is revealed. Here are the chess pieces that we've designed:
 
