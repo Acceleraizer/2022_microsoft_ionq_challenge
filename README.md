@@ -20,7 +20,7 @@ In quantum auto-chess, quantum algorithms are employed for automated fights. Dur
 
 During "battle phase" ,your circuit is connected with your opponents, then measured. Unlike traditional auto-chess, the quantum auto-chess players face two fights every round. First, A player’s circuit output will become B player’s input. Then we measure B circuit’s outfits, and sum the total number of 1 digit that are measured. This is the AB fight. Then the BA fight happens. Whichever side that achieved more 1 digits wins the round and deals damage to the other player. 
 
-<img src="cardbook.png" alt="Two fights in one round">
+<img src="battle_demo.png" alt="Two fights in one round">
 
 A circuit that’s designed to turn a 0 state into 1 will more likely turn the state 1 into 0. Hence, your opponent will block your circuit from flipping the initial state, but the complexity of quantum systems makes the actual result <b>way more <b> unpredictable. But that is the fun of quantum mechanics; you never know for certain!
 
