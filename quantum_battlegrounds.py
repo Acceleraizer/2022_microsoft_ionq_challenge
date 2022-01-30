@@ -165,7 +165,7 @@ class Arena:
         raw_result1 = job1.result()
         raw_result2 = job2.result()
         if self.target_backend == 'ionq.qpu':
-            r1, r2 = raw_result1.get_counts(atob), raw_result2.get_counts(btoa)
+            r1, r2 = list(raw_result1.get_counts(atob).keys())[0], list(raw_result2.get_counts(btoa).keys())[0]
         else:
             # print(raw_result1)
             # print(raw_result1.to_dict())
