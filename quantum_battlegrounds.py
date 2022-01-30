@@ -1,3 +1,4 @@
+from lib2to3.pgen2 import token
 from os import abort, stat
 import typing
 from qiskit import QuantumCircuit
@@ -12,7 +13,7 @@ from numpy.random import choice
 # 2. build phase
 # 3. 
 
-SINGLE_QUBIT_GATES = ['X', 'Y', 'Z', 'H']
+SINGLE_QUBIT_GATES = ['I', 'X', 'Y', 'Z', 'H']
 TWO_QUBIT_GATES = ['CX']
 
 def applySQG(circuit, gatename, targets):
@@ -24,6 +25,8 @@ def applySQG(circuit, gatename, targets):
         circuit.z(targets[0])
     elif gatename == 'H':
         circuit.h(targets[0])
+    elif gatename == 'I':
+        circuit.i(targets[0])
     else:
         print("gate translation not implemented")
         return None
@@ -39,20 +42,15 @@ def sum_score(bitstring):
         return sum([b=='1' for b in bitstring])
 
 def pick_from_probabilities(probdict:dict):
-    val, prob = [], []
-    for k, v in probdict.items():
-        val.append(k)
-        prob.append(v)
-
+    val , prob = list(probdict.keys()), list(probdict.values())
     print(val, prob)
     return choice(val, p=prob)
 
 class Player:
     id = None
     minions = {}
-    health = 3
+    health = 1
     circuit:QuantumCircuit = None
-    last_circuit:QuantumCircuit = None
 
     def __init__(self, id, gate_types):
         self.id = id
@@ -63,13 +61,15 @@ class Player:
 
 
 
-
 class Arena:
     players = []
+    players_remaining = 0
     pool = {}
     hero_pool = {}
     round = 0
     lanes = 0
+    shopsize = 5
+    current_shop = None
 
     target_backend = 'ionq.simulator'
     provider = None
@@ -80,6 +80,7 @@ class Arena:
         for gate in starting_gates.keys():
             starting_gates[gate] = 0
         self.players = [Player(i+1, starting_gates.copy()) for i in range(playercount)]
+        self.players_remaining = playercount
         self.pool = starting_pool
         self.lanes = lanes
         if (not backend==None):
@@ -89,8 +90,6 @@ class Arena:
             resource_id = "/subscriptions/b1d7f7f8-743f-458e-b3a0-3e09734d716d/resourceGroups/aq-hackathons/providers/Microsoft.Quantum/Workspaces/aq-hackathon-01",
             location = "eastus"
         )
-        print([backend.name() for backend in self.provider.backends()])
-
 
     def set_backend(self, backend):
         self.target_backend = backend
@@ -103,6 +102,14 @@ class Arena:
     """
     Buy/sell phase
     """
+    def randomize_shop(self):
+        gates, amt = list(self.pool.keys()), list(self.pool.values())
+        tot = sum(amt)
+        probs = list(map(lambda x:x/tot, amt))
+        # print(probs)
+        self.current_shop = choice(gates, size=self.shopsize, p=probs, replace=False)
+        return True
+        
     # pid is the id of the player
     # minion is the string name of the gate
     def buy_minion(self, pid, minion):
@@ -121,11 +128,6 @@ class Arena:
     """
     Build phase
     """
-
-    def use_last_circuit(self, pid):
-        self.players[pid].circuit = self.players[pid].last_circuit
-
-
     # requirement: circuit_data is an array containing pairs (gate, [list of qubits])
     def build_circuit(self, pid, circuit_data):
         circuit = QuantumCircuit(self.lanes, self.lanes)
@@ -139,40 +141,153 @@ class Arena:
     """
     Battle phase
     """
-    def battle(self, pid1, pid2, shots=1):
-        atob = self.players[pid1].circuit.combine(self.players[pid2].circuit)
-        btoa = self.players[pid2].circuit.combine(self.players[pid1].circuit)
+    def battle(self, pid1, pid2):
+        atob, btoa = self.players[pid1].circuit.copy(), self.players[pid2].circuit.copy()
+        atob.barrier()
+        btoa.barrier()
+        atob, btoa = atob.combine(self.players[pid2].circuit), btoa.combine(self.players[pid1].circuit)
+        atob.barrier()
+        btoa.barrier()
         atob.measure(range(self.lanes), range(self.lanes))
         btoa.measure(range(self.lanes), range(self.lanes))
-        print(f"Round between Player {pid1} and Player {pid2}")
+        atob.name = f"atob{self.round}"
+        btoa.name = f"btoa{self.round}"
+        print(f"Round between Player {pid1+1} and Player {pid2+1}")
         print(atob)
         print(btoa)
 
         simulator_backend = self.provider.get_backend(self.target_backend)
-        job1 = simulator_backend.run(atob, shots=shots)
-        job2 = simulator_backend.run(btoa, shots=shots)
+        job1 = simulator_backend.run(atob, shots=1)
+        job2 = simulator_backend.run(btoa, shots=1)
         
         raw_result1 = job1.result()
         raw_result2 = job2.result()
         if self.target_backend == 'ionq.qpu':
-            return raw_result1.get_counts(atob), raw_result2.get_counts(btoa)
+            r1, r2 = raw_result1.get_counts(atob), raw_result2.get_counts(btoa)
         else:
             # print(raw_result1)
             # print(raw_result1.to_dict())
             probdict1 = raw_result1.to_dict()['results'][0]['data']['probabilities']
             probdict2 = raw_result2.to_dict()['results'][0]['data']['probabilities']
             # print(probdict1)
-            return pick_from_probabilities(probdict1), pick_from_probabilities(probdict2)
+            r1, r2 = pick_from_probabilities(probdict1), pick_from_probabilities(probdict2)
 
-
-    def battle_resolve(self, pid1, pid2):
-        r1, r2 = self.battle(pid1, pid2, shots=1)
-        print(r1, r2)
-        s1 = sum_score(r1)
-        s2 = sum_score(r2)
+        s1, s2 = sum_score(r1), sum_score(r2)
         return r1, r2, s1, s2
-    
 
+    
+    """
+    I/O Functions
+    """
+    def get_buy_choice(self, pid):
+        print(f"Player {pid+1} to buy minions")
+        print(f"Current shop: {list(enumerate(self.current_shop))}")
+        buy_choice = input(f"Selection? ")
+        if buy_choice.isdigit() and int(buy_choice) in range(self.shopsize):
+            self.buy_minion(pid, self.current_shop[int(buy_choice)])
+            print(f"{self.current_shop[int(buy_choice)]} purchased!")
+        else:
+            print("Nothing purchased")
+
+
+    def check_use_last_circuit(self, pid):
+        if self.players[pid].circuit == None:
+            return False
+        
+        print(self.players[pid].circuit)
+        yes = input("Use last circuit? (y/n): ")
+        if yes.lower() == 'y':
+            return True
+        else:
+            return False
+
+    def get_build_circuit(self, pid):
+        avail = self.players[pid].minions.copy()
+        sz = sum(avail.values())
+        # circuit_data = []
+        circuit = QuantumCircuit(self.lanes, self.lanes)
+        while sz > 0:
+            print(f"====================\nPlayer {pid+1} build phase.")
+            print(f"Available minions: {avail}, total minions = {sz}")
+            cmd = input("Place a gate: ")
+            tokens = cmd.split(sep = " ")
+            gatename = tokens[0].upper()
+            if gatename not in avail.keys() or avail[gatename] == 0:
+                print ("Not a valid choice!!")
+                continue
+            
+            if gatename in SINGLE_QUBIT_GATES:
+                if len(tokens) < 2 or not tokens[1].isdigit() or not int(tokens[1]) in range(self.lanes):
+                    print ("Position input incorrect!!")
+                    continue
+                applySQG(circuit, gatename, [int(tokens[1])])
+                # circuit_data.append((gatename, [int(tokens[1])]))
+            elif gatename in TWO_QUBIT_GATES:
+                if len(tokens) < 3 or not tokens[1].isdigit() or not int(tokens[1]) in range(self.lanes) or not tokens[2].isdigit() or not int(tokens[2]) in range(self.lanes) or int(tokens[1]) == int(tokens[2]):
+                    print ("Position inputs incorrect!!")
+                    continue
+                applyTQG(circuit, gatename, [int(tokens[1]), int(tokens[2])])
+                # circuit_data.append((gatename, [int(tokens[1]), int(tokens[2])]))
+            avail[gatename] -= 1
+            sz -= 1
+
+            print(circuit)
+
+        confirm = input("Confirm circuit build? (y/n): ")
+        if confirm.lower() == 'y':
+            self.players[pid].circuit = circuit
+            return
+        else:
+            self.get_build_circuit(pid)
+
+
+    def get_set_circuit(self, pid):
+        if self.check_use_last_circuit(pid):
+            return
+        else:
+            self.get_build_circuit(pid)
+
+    """
+    Game loop
+    """
+    def process_round(self):
+        self.round += 1
+        print(f"\n +++++++ ROUND {self.round} START +++++++ \n")
+        for pid in range(len(self.players)):
+            self.randomize_shop()
+            self.get_buy_choice(pid)
+            self.get_set_circuit(pid)
+        
+
+        print(f"\n +++++++ ROUND {self.round} BATTLE PHASE +++++++ \n")
+        # assume two players
+        r1, r2, s1, s2 = self.battle(0, 1)
+        print(f"In Round A, {r1} was measured, giving a score of {s1} for Player {1}!")
+        print(f"In Round B, {r2} was measured, giving a score of {s2} for Player {2}!")
+        if s1 == s2:
+            print("This battle was a draw!")
+        else:
+            print(f"The winner of this round is Player {1 if s1>s2 else 2}")
+            if s1>s2:
+                self.players[1].health -= 1
+                if self.players[1].health == 0:
+                    self.players.pop(1)
+            else:
+                self.players[0].health -= 1
+                if self.players[0].health == 0:
+                    self.players.pop(0)
+            self.players_remaining -= 1
+
+        
+        print(f"\n +++++++ STATE AT THE END OF ROUND {self.round} +++++++ \n")
+        self.pr_playerstate()
+
+    def run_game(self):
+        while self.players_remaining > 1:
+            self.process_round()
+        
+        print (f"\n!!! THE WINNER IS Player {self.players[0].id} !!!\N")
+        
 
 
     """
@@ -180,6 +295,7 @@ class Arena:
     """
     def pr_playerstate(self):
         print("\n".join([str(player) for player in self.players]))
+
 
     def pr_boardstate(self):
         print(f"Minions in the pool: {self.pool}")
@@ -194,32 +310,3 @@ class Arena:
 
 
 
-
-
-
-
-
-# Create a Quantum Circuit acting on the q register
-# circuit = QuantumCircuit(3, 3)
-# circuit.name = "Qiskit Sample - 3-qubit GHZ circuit"
-# circuit.h(0)
-# circuit.cx(0, 1)
-# circuit.cx(1, 2)
-# circuit.measure([0,1,2], [0, 1, 2])
-
-# Print out the circuit
-# print(circuit.draw())
-
-# simulator_backend = provider.get_backend("ionq.simulator")
-# job = simulator_backend.run(circuit, shots=100)
-# job_id = job.id()
-# print("Job id", job_id)
-
-# result = job.result()
-
-# The histogram returned by the results can be sparse, so here we add any of the missing bitstring labels.
-# counts = {format(n, "03b"): 0 for n in range(8)}
-# counts.update(result.get_counts(circuit))
-# print(counts)
-
-# print('success')
