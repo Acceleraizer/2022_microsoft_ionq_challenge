@@ -30,6 +30,7 @@ In this Unity demo, we present the core quantum algorithm: Two players get invol
 
 <img src="cardbook.png" alt="Card Book">
 From left to right: X gate, H gate, S gate, I gate and CNOT gate. You can find out about the inspiration behind the designs in our presentation, or simply in the game!
+
 # Future Vision
 
 In future versions, the game would be equipped with multi-player support, a health and damage system, a currency system, animations. In addition, the common pool of chess pieces will randomly assign pieces to each player's shop interface, and can be refresh through spending currency if you don't like the pieces presented. 
