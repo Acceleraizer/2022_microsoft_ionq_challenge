@@ -51,7 +51,7 @@ def pick_from_probabilities(probdict:dict):
 class Player:
     id = None
     minions = {}
-    health = 1
+    health = 2
     circuit:QuantumCircuit = None
 
     def __init__(self, id, gate_types):
@@ -274,11 +274,12 @@ class Arena:
                 self.players[1].health -= 1
                 if self.players[1].health == 0:
                     self.players.pop(1)
+                    self.players_remaining -= 1
             else:
                 self.players[0].health -= 1
                 if self.players[0].health == 0:
                     self.players.pop(0)
-            self.players_remaining -= 1
+                    self.players_remaining -= 1
 
         
         print(f"\n +++++++ STATE AT THE END OF ROUND {self.round} +++++++ \n")
