@@ -7,6 +7,8 @@
   
 </p>
 
+Team Members: Wittmann Goh, Yiting Huang, Nadine Meister (wyn)
+
 [Repo to our Unity Implementation](https://github.com/nadinem100/iQuHackUnityGame.git)
 
 Welcome to Quantum Auto-Chess. This is an auto-chess game whose gameplay is based on quantum logic. We will introduce the demo version we've created with Unity3D, and our vision for a well-developed game.
